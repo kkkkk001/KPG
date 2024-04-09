@@ -12,3 +12,8 @@ bash run.sh Twitter16 4
 bash run_classify.sh Twitter16 4
 ```
 
+For Weibo22 dataset, please first unzip files in data/Weibo, and the run the following commands to generate the propagation graphs from the text files.
+
+```
+python Process/getWeibograph.py
+```
