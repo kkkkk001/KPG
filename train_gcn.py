@@ -43,7 +43,6 @@ class GCN(torch.nn.Module):
         x = F.dropout(x, training=self.training)
         x = self.conv2(x, edge_index)
         x = F.elu(x)
-        # x = scatter_mean(x, data.batch, dim=0)
         x = x[data.rootindex]
 
         x1, bu_edge_index = data.x, data.BU_edge_index
@@ -52,7 +51,6 @@ class GCN(torch.nn.Module):
         x1 = F.dropout(x1, training=self.training)
         x1 = self.conv4(x1, bu_edge_index)
         x1 = F.elu(x1)
-        # x1 = scatter_mean(x1, data.batch, dim=0)
         x1 = x1[data.rootindex]
 
         x = torch.cat((x,x1), 1)
