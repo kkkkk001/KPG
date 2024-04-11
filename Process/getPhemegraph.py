@@ -101,7 +101,6 @@ def main():
     treePath = os.path.join(_dir, 'data/Pheme/data.TD_RvNN.vol_5000.txt')
     print("reading Pheme tree")
     treeDic = {}
-    # wrongs = ['4468987704069525','4581284120627283','4615059169347883', '4602038618685535','4580189993974251','4579904375751342','4546980971813805','4546979504594837', '4503402090978990','4741250936734631']
     for line in open(treePath):
         line = line.rstrip()
         # if line.split('\t')[0] in wrongs:
@@ -114,7 +113,6 @@ def main():
     print('tree no:', len(treeDic))
 
 
-    # labelPath = os.path.join(cwd, "data/Weibo/weibo_id_label.txt")
     labelPath = os.path.join(_dir, "data/Pheme/Pheme_label_All.txt")
     print("loading pheme label:")
     event,y= [],[]
@@ -148,7 +146,6 @@ def main():
             if len(event) == 1:
                 x_word, x_index = str2matrix(event[1]['vec'])
                 rootfeat = np.zeros([1, 5000])
-                # rootfeat = np.zeros([1, 18000])
                 rootfeat[0, np.array(x_index)] = np.array(x_word)
                 x_x = getfeature([x_word], [x_index])
                 tree = [[0],[0]]
@@ -163,7 +160,6 @@ def main():
             rootfeat, tree, x_x, rootindex, y = np.array(rootfeat), np.array(tree), np.array(x_x).astype(int), np.array(
                 rootindex), np.array(y)
             # pdb.set_trace()
-            # np.savez(os.path.join(cwd,'data/Weibograph/'+id+'.npz'), x=x_x,root=rootfeat,edgeindex=tree,rootindex=rootindex,y=y)
             np.savez(os.path.join(_dir,'data/Phemegraph/'+id+'.npz'), x=x_x,root=rootfeat,edgeindex=tree,rootindex=rootindex,y=y)
             return None
         x_word, x_index, tree, rootfeat, rootindex = constructMat(event)
@@ -174,7 +170,6 @@ def main():
     # results = Parallel(n_jobs=30, backend='threading')(delayed(loadEid)(treeDic[eid] if eid in treeDic else None,eid,labelDic[eid]) for eid in tqdm(event))
     for eid in tqdm(event):
         loadEid(treeDic[eid],eid,labelDic[eid])
-    # loadEid(treeDic[event[3889]],event[3889],labelDic[event[3889]]) 
     # pdb.set_trace()
     print("finished!")
     return
