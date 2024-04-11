@@ -49,7 +49,6 @@ def constructMat(tree):
             root_index=nodeC.index
             root_word=nodeC.word
     rootfeat = np.zeros([1, 5000])
-    # rootfeat = np.zeros([1, 18000])
     if len(root_index)>0:
         rootfeat[0, np.array(root_index)] = np.array(root_word)
     ## 3. convert tree to matrix and edgematrix
@@ -102,12 +101,8 @@ def main():
     treePath = os.path.join(_dir, 'data/Weibo/data.TD_RvNN.vol_5000.txt')
     print("reading Weibo tree")
     treeDic = {}
-    # wrongs = ['4468987704069525','4581284120627283','4615059169347883', '4602038618685535','4580189993974251','4579904375751342','4546980971813805','4546979504594837', '4503402090978990','4741250936734631']
     for line in open(treePath):
         line = line.rstrip()
-        # if line.split('\t')[0] in wrongs:
-        #     continue
-        # print(line.split('\t')[0])
         eid, indexP, indexC,Vec = line.split('\t')[0], line.split('\t')[1], int(line.split('\t')[2]), line.split('\t')[-1]
         if not treeDic.__contains__(eid):
             treeDic[eid] = {}
@@ -149,7 +144,6 @@ def main():
             if len(event) == 1:
                 x_word, x_index = str2matrix(event[1]['vec'])
                 rootfeat = np.zeros([1, 5000])
-                # rootfeat = np.zeros([1, 18000])
                 rootfeat[0, np.array(x_index)] = np.array(x_word)
                 x_x = getfeature([x_word], [x_index])
                 tree = [[0],[0]]
@@ -175,7 +169,6 @@ def main():
     # results = Parallel(n_jobs=30, backend='threading')(delayed(loadEid)(treeDic[eid] if eid in treeDic else None,eid,labelDic[eid]) for eid in tqdm(event))
     for eid in tqdm(event):
         loadEid(treeDic[eid],eid,labelDic[eid])
-    # loadEid(treeDic[event[3889]],event[3889],labelDic[event[3889]]) 
     # pdb.set_trace()
     print("finished!")
     return
