@@ -77,11 +77,11 @@ def train_bert():
 			input_ids = torch.tensor(tokens["input_ids"]).to(device)
 			attention_mask = torch.tensor(tokens["attention_mask"]).to(device)
 			Batch_data_y = Batch_data_y.to(device)
-			optimizer.zero_grad()               # 梯度清零
-			outputs, prob = model(input_ids,attention_mask)          # 前向传播
+			optimizer.zero_grad()               
+			outputs, prob = model(input_ids,attention_mask)          
 			loss=F.nll_loss(outputs,Batch_data_y)
 			avg_train_loss += (loss.item()*outputs.shape[0])
-			loss.backward()                     # 反向传播，计算梯度
+			loss.backward()                    
 			optimizer.step()
 			_, pred = outputs.max(dim=-1)
 			train_pred.extend(pred.tolist())
@@ -104,7 +104,7 @@ def train_bert():
 			input_ids = torch.tensor(tokens["input_ids"]).to(device)
 			attention_mask = torch.tensor(tokens["attention_mask"]).to(device)
 			Batch_data_y = Batch_data_y.to(device)
-			outputs, prob = model(input_ids,attention_mask)          # 前向传播
+			outputs, prob = model(input_ids,attention_mask)          
 			loss=F.nll_loss(outputs,Batch_data_y)
 			# _, pred = outputs.max(dim=-1)
 			avg_val_loss += (loss.item()*outputs.shape[0])
