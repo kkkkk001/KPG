@@ -30,10 +30,8 @@ class GCN(torch.nn.Module):
         super(GCN, self).__init__()
         self.conv1 = GCNConv(input_dim, hidden_dim)
         self.conv2 = GCNConv(hidden_dim, output_dim)
-
         self.conv3 = GCNConv(input_dim, hidden_dim)
         self.conv4 = GCNConv(hidden_dim, output_dim)
-
         self.fc = torch.nn.Linear((output_dim*2), num_class)
 
     def forward(self, data):
@@ -44,7 +42,6 @@ class GCN(torch.nn.Module):
         x = self.conv2(x, edge_index)
         x = F.elu(x)
         x = x[data.rootindex]
-
         x1, bu_edge_index = data.x, data.BU_edge_index
         x1 = self.conv3(x1, bu_edge_index)
         x1 = F.elu(x1)
@@ -52,7 +49,6 @@ class GCN(torch.nn.Module):
         x1 = self.conv4(x1, bu_edge_index)
         x1 = F.elu(x1)
         x1 = x1[data.rootindex]
-
         x = torch.cat((x,x1), 1)
         x = self.fc(x)
         x = F.log_softmax(x, dim=1)
@@ -74,8 +70,8 @@ def train(x_test, x_train,TDdroprate,BUdroprate,lr, weight_decay,n_epochs,batchs
     #         {'params':model.BUrumorGCN.conv1.parameters(),'lr':lr/5},
     #         {'params': model.BUrumorGCN.conv2.parameters(), 'lr': lr/5}
     #     ], lr=lr, weight_decay=weight_decay)
-    # treeDic, autorchor_size=loadAttrTree(dataname)
-    treeDic, autorchor_size=loadAttrTree(dataname.split('_')[0])
+    # treeDic, author_size=loadAttrTree(dataname)
+    treeDic, author_size=loadAttrTree(dataname.split('_')[0])
     if num_class == 4:
         from tools.earlystopping import EarlyStopping
     else:
