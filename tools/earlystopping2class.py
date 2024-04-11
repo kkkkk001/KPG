@@ -42,18 +42,6 @@ class EarlyStopping:
             print("Best model updated in epoch {}! Loss:{:.4f}| Accuracy: {:.4f}|pre1: {:.4f}|pre2: {:.4f}"
                       "|rec1: {:.4f}|rec2: {:.4f}|F1: {:.4f}|F2: {:.4f}"
                       .format(epoch,-self.best_score,self.accs,self.pre1,self.pre2,self.rec1,self.rec2,self.F1,self.F2))
-        # elif score < self.best_score and accs < self.accs:
-        #     self.counter += 1
-        #     print('EarlyStopping counter: {} out of {}'.format(self.counter,self.patience))
-        #     if self.counter >= self.patience:
-        #         self.early_stop = True
-        #         print("BEST LOSS:{:.4f}| Accuracy: {:.4f}|acc1: {:.4f}|acc2: {:.4f}|pre1: {:.4f}|pre2: {:.4f}"
-        #               "|rec1: {:.4f}|rec2: {:.4f}|F1: {:.4f}|F2: {:.4f}"
-        #               .format(-self.best_score,self.accs,self.acc1,self.acc2,self.pre1,self.pre2,self.rec1,self.rec2,self.F1,self.F2))
-        # elif accs >= self.accs and (F1 + F2 >=  self.F1 + self.F2):
-        # elif self.best_score <= score and accs+F1+F2>=self.accs+self.F1+self.F2:
-        # elif self.best_score <= score:
-        # elif score > self.best_score:
         elif accs > self.accs or (accs == self.accs and score > self.best_score):
             self.best_score = score
             self.accs = accs
@@ -84,6 +72,5 @@ class EarlyStopping:
         '''Saves model when validation loss decrease.'''
         # if self.verbose:
         #     print('Validation loss decreased ({:.6f} --> {:.6f}).  Saving model ...'.format(self.val_loss_min,val_loss))
-        torch.save(model.state_dict(),"cstudy/"+modelname+str+'.m')
         # torch.save(model.state_dict(),f"clfs/{modelname}/"+modelname+str+'.m')
         self.val_loss_min = val_loss
