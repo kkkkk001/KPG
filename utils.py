@@ -89,7 +89,6 @@ def update_generated_node_feature(tensor_data, tree, model, selected_edges):
             response = torch.LongTensor([SOS_token] + [int(item) for item in tree[node]['vec'].split()]).to(device)
             context_node = int(tree[node]['parent'])
             context = torch.LongTensor([SOS_token] + [int(item) for item in tree[context_node]['vec'].split()]).to(device)
-            # prob, z, mu, logvar, generated_response = model(response, context, etype)
             generated_response = model.generate(random.randint(len(response)//2, len(response)), context, root_feat)
             _, pred = generated_response.max(dim=-1)
             pred = pred.tolist()
@@ -108,12 +107,10 @@ def update_generated_node_feature(tensor_data, tree, model, selected_edges):
 def update_cr_pairs(pairs, root_id, datasetname, tree, fold, org_node_num=1, write=False):
     num_pairs = len(pairs)
     # edge_index = data_i.edge_index.T.tolist()
-    # edge_type = data_i.edge_type
     org_nodes = range(org_node_num)
     # selected_index = []
     # for pair in pairs:
     #     selected_index.append(edge_index.index(pair))
-    # selected_edge_type = edge_type[selected_index]
     response_len = {}
     if write:
         fout = open(_dir+f"cr_data/{datasetname}/fold_{fold}/{root_id}.txt", "w")
@@ -264,12 +261,7 @@ class CRPairDataset(Dataset):
                     responses.append(torch.LongTensor(eval(response))[poslist])
                 else:
                     responses.append(torch.LongTensor(eval(response)))
-                # if context == 'None':
-                #     contexts.append(torch.LongTensor(eval(response)[:self.padding_size]))
-                # else:
-                #     contexts.append(torch.LongTensor(eval(context)[:self.padding_size]))
-                # context_lens.append(len(contexts[-1]))
-                # responses.append(torch.LongTensor(eval(response)[:self.padding_size]))
+
                 response_lens.append(len(responses[-1]))
                 if eval(edge)[1] not in node_feats.keys():
                     node_feats[eval(edge)[1]] = eval(response)
