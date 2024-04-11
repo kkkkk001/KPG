@@ -400,13 +400,10 @@ def compute_ece(probs, labels, n_bins=15):
 	ece = 0.0
 
 	for bin_lower, bin_upper in zip(bin_lowers, bin_uppers):
-		# 找到落在当前bin的预测概率
 		in_bin = (max_probs > bin_lower.item()) * (max_probs <= bin_upper.item())
 		prop_in_bin = in_bin.float().mean()
 		if prop_in_bin.item() > 0:
-			# 计算当前bin的准确率
 			accuracy_in_bin = (labels[in_bin] == probs[in_bin].argmax(dim=1)).float().mean()
-			# 计算当前bin的预测概率的平均值
 			avg_confidence_in_bin = probs[in_bin].max(dim=1).values.mean()
 			ece += torch.abs(avg_confidence_in_bin - accuracy_in_bin) * prop_in_bin
 
