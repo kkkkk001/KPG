@@ -297,14 +297,12 @@ class EndNodeSelector(nn.Module):
         x = F.elu(x)
         e_prob = self.fc(x)
 
-        # chosen_s_nodes = torch.LongTensor([]).to(self.device)
         chosen_s_cand_nodes = torch.LongTensor([]).to(self.device)
         chosen_e_nodes = torch.LongTensor([]).to(self.device)
 
         if np.random.rand() > epsilon:
             e_prob = F.log_softmax(e_prob.masked_fill(e_mask_all_nodes, -1e9), dim=0)
             cond2 = (e_mask_all_nodes.squeeze(1)==False)
-            # print('all')
         else:
             e_prob = F.log_softmax(e_prob.masked_fill(e_mask, -1e9), dim=0)
             cond2 = (e_mask.squeeze(1)==False)
@@ -313,14 +311,11 @@ class EndNodeSelector(nn.Module):
         for data_idx in range(Batchdata.batch.max()+1):
             cand_nodes = torch.where((Batchdata.batch==data_idx)&(cond2))[0]
             if len(cand_nodes) == 0 or Batchdata.node_num[data_idx] >= self.max_size-1:
-                # print("continue",data_idx, len(cand_nodes), Batchdata.node_num[data_idx], "false num:", e_mask.tolist().count(False),e_mask_all_nodes.tolist().count(False))
                 continue
             chosen_e_node = random.choices(cand_nodes, weights=torch.exp(e_prob[cand_nodes]))[0].unsqueeze(0)
             chosen_e_nodes = torch.cat((chosen_e_nodes,chosen_e_node))
             chosen_s_cand_node = all_edge_index[0][torch.where(all_edge_index[1]==chosen_e_node)[0]]
             chosen_s_cand_nodes = torch.cat((chosen_s_cand_nodes,chosen_s_cand_node))
-            # chosen_s_node = Batchdata.s_mapping_index[0][torch.where(Batchdata.s_mapping_index[1]==chosen_s_cand_node)[0]]
-            # chosen_s_nodes = torch.cat((chosen_s_nodes,chosen_s_node))
             selected_data_idx.append(data_idx)
         # print(chosen_s_cand_nodes,'\n',Batchdata.s_mapping_index[0])
         new_x = Batchdata.x.detach().clone()
@@ -329,12 +324,7 @@ class EndNodeSelector(nn.Module):
         legal_cand_s_idx, legal_s_idx = torch.where(chosen_s_cand_nodes.unsqueeze(1).repeat(1,Batchdata.s_mapping_index.shape[1]) == Batchdata.s_mapping_index[1])
         chosen_s_nodes = Batchdata.ptr.detach().clone()
         chosen_s_nodes[legal_cand_s_idx] = Batchdata.s_mapping_index[0][legal_s_idx]
-        # chosen_s_nodes = Batchdata.s_mapping_index[0][legal_s_idx]
-        # print(legal_s_idx.shape, len(selected_data_idx))
-        # print(chosen_s_nodes, '\n',legal_s_idx)
-        # set_trace()
         new_edges = torch.cat((chosen_s_nodes[selected_data_idx].unsqueeze(0), (Batchdata.node_num+Batchdata.ptr[0:-1])[selected_data_idx].unsqueeze(0)),dim=0)
-        # new_edges = torch.cat((chosen_s_nodes.unsqueeze(0), (Batchdata.node_num+Batchdata.ptr[0:-1])[selected_data_idx][legal_cand_s_idx].unsqueeze(0)),dim=0)
         new_edges = torch.cat((Batchdata.edge_index.detach().clone(),new_edges),dim=1)
         new_s_mapping = torch.cat(((Batchdata.node_num+Batchdata.ptr[0:-1])[selected_data_idx].unsqueeze(0), chosen_e_nodes.unsqueeze(0)), dim=0)
         new_s_mapping = torch.cat((Batchdata.s_mapping_index.detach().clone(),new_s_mapping),dim=1)
@@ -379,7 +369,6 @@ class EndNodeSelector(nn.Module):
         for data_idx in range(Batchdata.batch.max()+1):
             cand_nodes = torch.where((Batchdata.batch==data_idx)&(cond2))[0]
             if len(cand_nodes) == 0 or Batchdata.node_num[data_idx] >= self.max_size-1:
-                # print("continue",data_idx, len(cand_nodes), Batchdata.node_num[data_idx], "false num:", e_mask.tolist().count(False),e_mask_all_nodes.tolist().count(False))
                 continue
             chosen_e_node = random.choices(cand_nodes)[0].unsqueeze(0)
             chosen_e_nodes = torch.cat((chosen_e_nodes,chosen_e_node))
@@ -392,7 +381,6 @@ class EndNodeSelector(nn.Module):
         chosen_s_nodes = Batchdata.ptr.detach().clone()
         chosen_s_nodes[legal_cand_s_idx] = Batchdata.s_mapping_index[0][legal_s_idx]
         new_edges = torch.cat((chosen_s_nodes[selected_data_idx].unsqueeze(0), (Batchdata.node_num+Batchdata.ptr[0:-1])[selected_data_idx].unsqueeze(0)),dim=0)
-        # new_edges = torch.cat((chosen_s_nodes.unsqueeze(0), (Batchdata.node_num+Batchdata.ptr[0:-1])[selected_data_idx][legal_cand_s_idx].unsqueeze(0)),dim=0)
         new_edges = torch.cat((Batchdata.edge_index.detach().clone(),new_edges),dim=1)
         new_s_mapping = torch.cat(((Batchdata.node_num+Batchdata.ptr[0:-1])[selected_data_idx].unsqueeze(0), chosen_e_nodes.unsqueeze(0)), dim=0)
         new_s_mapping = torch.cat((Batchdata.s_mapping_index.detach().clone(),new_s_mapping),dim=1)
