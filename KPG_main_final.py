@@ -87,13 +87,8 @@ num_step = 200
 num_epoch_rc = 1
 max_patience = 4
 min_original_size = 2
-# back_size = int(len(x_train_ids)/10)
+
 init_epoch = -1
-# if datasetname == 'Twitter15':
-#     if fold == '2':
-#         init_epoch = 2
-#     else:
-#         init_epoch = 3
 best_acc_LL=best_acc_RR=best_acc_LR=best_acc_RL = 0
 KPG_patience = 0
 batchsize = 128
@@ -179,7 +174,6 @@ for epoch in range(init_epoch+1, num_epoch):
 
             gclass_prob = KPG.calculate_reward_feedback(new_x.to(device),new_edges.to(device),Batchdata.batch.to(device))
             gclass_prob = 1.5 - gclass_prob[range(rewards.shape[0]),Batchdata.y]
-            # gclass_prob = torch.clamp(gclass_prob, 1, 1+0.025*min(step+1,20))
 
             ### split batch data
             loss = torch.tensor([],dtype=torch.float32).to(device)
@@ -213,8 +207,6 @@ for epoch in range(init_epoch+1, num_epoch):
                         org_e_node = s_mapping_i[1][edge_index_i[1][edge_idx]].item() - max_size_dic[datasetname.split('_')[0]]
                     except:
                         set_trace()
-                    # if org_e_node not in start_nodes_lists[previous_data_idx_mapping[data_idx]]:   # deal with selected nodes in previous steps
-                    #     start_nodes_lists[previous_data_idx_mapping[data_idx]].append(org_e_node)
                     generated_edges.append([org_s_node, org_e_node])
                 if rewards_diff[data_idx] >= 0:
                     start_nodes_lists[previous_data_idx_mapping[data_idx]].append(chosen_e_node.item() - max_size_dic[datasetname.split('_')[0]])
@@ -256,13 +248,8 @@ for epoch in range(init_epoch+1, num_epoch):
                     current_roots.append(root_id)
                     selected_data_idx.append(data_idx)
                 else:
-                    # if augmented[previous_data_idx_mapping[data_idx]]:
-                    #     data_i = KPG.update_graph(augdata_i, augstructure, start_nodes_lists[previous_data_idx_mapping[data_idx]], edge_index_i, node_num_i, s_mapping_i)
-                    #     set_trace()
                     finished_num += 1
                     org_node_num = org_traindata_list[batch_idx*batchsize+previous_data_idx_mapping[data_idx]].x.shape[0]
-                    # print(step, root_id, augdata_i, len(generated_edges), 'avg loss:', np.mean(avg_losses), finished_num, node_num_i, patiences[previous_data_idx_mapping[data_idx], Batchdata.y[data_idx]])
-                    # response_lens = update_cr_pairs(generated_edges, root_id, datasetname, augtree, fold, org_node_num, write=True)
                     if rewards_diff[data_idx] >= 0:
                         response_lens = update_cr_pairs(generated_edges, root_id, datasetname, augtree, fold, org_node_num, write=True)
                     else:
@@ -284,7 +271,6 @@ for epoch in range(init_epoch+1, num_epoch):
             optimizerK.step()
 
             patiences = patiences[selected_data_idx]
-            # rewards[torch.where(rewards_diff < 0)[0]] = previous_rewards[torch.where(rewards_diff < 0)[0]]
             rewards[torch.where(rewards_diff < 0)[0],Batchdata.y[torch.where(rewards_diff < 0)[0]]]=previous_rewards[torch.where(rewards_diff < 0)[0],Batchdata.y[torch.where(rewards_diff < 0)[0]]]
             previous_rewards = rewards[selected_data_idx]
             previous_data_idx_mapping = copy.deepcopy(current_data_idx_mapping)
@@ -292,8 +278,6 @@ for epoch in range(init_epoch+1, num_epoch):
             time_data_step_end = time.time()
             print("Epoch {:02d}-{:03d} Batch {} | Time {:.4f}s | avg loss: {:.4f}".format(epoch, step, batch_idx, (time_data_step_end - time_data_step_start), np.sum(avg_losses)/np.sum(avg_losses_num)))
 
-            # print(previous_data_idx_mapping)
-            # print(step, "finished.", Batchdata.x.shape, finished_num, len(current_roots))
             if finished_num == len(roots):
                 break
         time_batch_end = time.time()
@@ -318,7 +302,6 @@ for epoch in range(init_epoch+1, num_epoch):
                     if bidx==0:
                         root_feat = batch_dic[bidx]['responses'][0]
                         root = torch.LongTensor(root_feat).to(device)
-                        # etype = torch.LongTensor(batch_dic[bidx]['etypes'][0]).to(device)
                         z, mu, logvar, decoded_r = ResponseG(root, None, root, truthrate=truthrate)
                         _, pred = decoded_r.max(dim=-1)
                         pred = pred.tolist()
@@ -327,15 +310,9 @@ for epoch in range(init_epoch+1, num_epoch):
                             if xi < 5000:
                                 new_x[xi] += 1.0
                         G['x'][0] = new_x
-                        # output = KPG.calculate_reward_feedback(G, None, eval=True)
-                        # class_loss = F.nll_loss(output, label)
                         KL_divergence = -0.5 * torch.sum(1 + logvar - logvar.exp() - mu.pow(2))
                         CE_loss = ce_loss(decoded_r, root[1:])/2
-                        loss = KL_divergence + CE_loss # + class_loss + CE_loss/2
-                        # loss = loss + KL_divergence
-                        # optimizerR.zero_grad()
-                        # loss.backward()
-                        # optimizerR.step()
+                        loss = KL_divergence + CE_loss 
                         losses_i.append(loss)
                         avg_loss.append(loss.item())
                         start_i = 1
@@ -349,7 +326,6 @@ for epoch in range(init_epoch+1, num_epoch):
                     for i in range(start_i, len(batch_dic[bidx]['contexts'])):
                         context = torch.LongTensor(batch_dic[bidx]['contexts'][i]).to(device)
                         response = torch.LongTensor(batch_dic[bidx]['responses'][i]).to(device)
-                        # etype = torch.LongTensor(batch_dic[bidx]['etypes'][i]).to(device)
                         ridx = batch_dic[bidx]['ridx'][i]
                         z, mu, logvar, decoded_r = ResponseG(response, context, root, truthrate=truthrate)
                         _, pred = decoded_r.max(dim=-1)
@@ -371,14 +347,11 @@ for epoch in range(init_epoch+1, num_epoch):
                 
                 reward_G_rg = KPG.calculate_reward_feedback(G['x'], G['edge_index'], torch.LongTensor([0]*G['x'].shape[0]).to(device)).squeeze(0)[label.item()]
                 mean_loss = (reward_G_org - reward_G_rg).exp() * sum(losses_i)/len(losses_i)
-                # avg_losses_i.append(mean_loss)
-                # if len(avg_losses_i) == back_size or (idx == k and len(avg_losses_i)>0):
+
                 optimizerR.zero_grad()
-                    # avg_loss_i = sum(avg_losses_i)/len(avg_losses_i)
-                    # avg_loss_i.backward()
                 mean_loss.backward()
                 optimizerR.step()
-                    # avg_losses_i = []
+
                 num_trained_ids += 1
             end_time = time.time()
             print("Epoch {:02d}-{:03d}-{:03d} takes {:.2f} mins to finish {} samples | Avg_train_loss: {:.4f}".format(epoch, k, epoch_rc, (end_time-start_time)/60, num_trained_ids, np.mean(avg_loss)))
@@ -460,7 +433,6 @@ for epoch in range(init_epoch+1, num_epoch):
 
             gclass_prob = KPG.calculate_reward_feedback(new_x.to(device),new_edges.to(device),Batchdata.batch.to(device))
             gclass_prob = 1.5 - gclass_prob[range(rewards.shape[0]),Batchdata.y]
-            # gclass_prob = torch.clamp(gclass_prob, 1, 1+0.025*min(step+1,20))
 
             ### split batch data
             loss = torch.tensor([],dtype=torch.float32).to(device)
@@ -491,8 +463,6 @@ for epoch in range(init_epoch+1, num_epoch):
                 for edge_idx in range(edge_index_i.shape[1]):
                     org_s_node = s_mapping_i[1][edge_index_i[0][edge_idx]].item() - max_size_dic[datasetname.split('_')[0]]
                     org_e_node = s_mapping_i[1][edge_index_i[1][edge_idx]].item() - max_size_dic[datasetname.split('_')[0]]
-                    # if org_e_node not in start_nodes_lists[previous_data_idx_mapping[data_idx]]:   # deal with selected nodes in previous steps
-                    #     start_nodes_lists[previous_data_idx_mapping[data_idx]].append(org_e_node)
                     generated_edges.append([org_s_node, org_e_node])
                 start_nodes_lists[previous_data_idx_mapping[data_idx]].append(chosen_e_node.item() - max_size_dic[datasetname.split('_')[0]])
                 response_lens = update_cr_pairs(generated_edges, root_id, datasetname, augtree, fold)
@@ -508,13 +478,11 @@ for epoch in range(init_epoch+1, num_epoch):
                         if patiences[data_idx, label] < max_patience:
                             continue_cond = True
                         else:
-                            # result_generated_graphs[previous_data_idx_mapping[data_idx]][label] = copy.deepcopy(Batchdata_list_previous_epoch[data_idx])
                             result_generated_graphs[previous_data_idx_mapping[data_idx]][label] = 1
                     else:
                         if patiences[data_idx, label] == 0:
                             continue_cond = True
                         if patiences[data_idx, label] == 1 and rewards_diff_all[data_idx, label]<0:
-                            # result_generated_graphs[previous_data_idx_mapping[data_idx]][label] = copy.deepcopy(Batchdata_list_previous_epoch[data_idx])
                             result_generated_graphs[previous_data_idx_mapping[data_idx]][label] = 1
                 if node_num_i < max_size_dic[datasetname.split('_')[0]]-1 and continue_cond:
                     current_data_idx_mapping[len(Batchdata_list)] = previous_data_idx_mapping[data_idx]
@@ -550,18 +518,6 @@ for epoch in range(init_epoch+1, num_epoch):
                     np.savez(_dir+f'rl_data/{datasetname}/fold_{fold}L/epoch_{epoch}/{root_id}.npz', x=data_i.x[:data_i.node_num.item()].cpu().numpy(), 
                             edge_index=data_i.edge_index.cpu().numpy(), node_num=data_i.node_num.cpu().numpy(), 
                             y=data_i.y.cpu().numpy(), isGenerated=isGenerated)
-                    # if patiences[data_idx, train_true_y[root_id]] < max_patience:
-                    #     np.savez(_dir+f'rl_data/{datasetname}/fold_{fold}R/epoch_{epoch}/{root_id}.npz', x=data_i.x[:data_i.node_num.item()].cpu().numpy(), 
-                    #         edge_index=data_i.edge_index.cpu().numpy(), node_num=data_i.node_num.cpu().numpy(), 
-                    #         y=data_i.y.cpu().numpy(), isGenerated=isGenerated)
-                    # else:
-                    #     isGenerated = np.zeros_like(result_generated_graphs[previous_data_idx_mapping[data_idx]][train_true_y[root_id]].s_mapping[0].cpu())
-                    #     for nidx, n in enumerate(result_generated_graphs[previous_data_idx_mapping[data_idx]][train_true_y[root_id]].s_mapping[0].tolist()):
-                    #         if 'tag' in augtree[result_generated_graphs[previous_data_idx_mapping[data_idx]][train_true_y[root_id]].s_mapping[1].tolist()[nidx]-max_size_dic[datasetname.split('_')[0]]+1].keys():
-                    #             isGenerated[n] = 1
-                    #     np.savez(_dir+f'rl_data/{datasetname}/fold_{fold}R/epoch_{epoch}/{root_id}.npz', x=result_generated_graphs[previous_data_idx_mapping[data_idx]][train_true_y[root_id]].x[:result_generated_graphs[previous_data_idx_mapping[data_idx]][train_true_y[root_id]].node_num.item()].cpu().numpy(), 
-                    #         edge_index=result_generated_graphs[previous_data_idx_mapping[data_idx]][train_true_y[root_id]].edge_index.cpu().numpy(), node_num=result_generated_graphs[previous_data_idx_mapping[data_idx]][train_true_y[root_id]].node_num.cpu().numpy(), 
-                    #         y=result_generated_graphs[previous_data_idx_mapping[data_idx]][train_true_y[root_id]].y.cpu().numpy(), isGenerated=isGenerated)
                     
                     finished_num += 1
                     org_node_num = org_traindata_list[batch_idx*batchsize+previous_data_idx_mapping[data_idx]].x.shape[0]
@@ -579,7 +535,6 @@ for epoch in range(init_epoch+1, num_epoch):
             avg_losses_num.append(len(current_roots))
 
             patiences = patiences[selected_data_idx]
-            # rewards[torch.where(rewards_diff < 0)[0]] = previous_rewards[torch.where(rewards_diff < 0)[0]]
             rewards[torch.where(rewards_diff < 0)[0],Batchdata.y[torch.where(rewards_diff < 0)[0]]]=previous_rewards[torch.where(rewards_diff < 0)[0],Batchdata.y[torch.where(rewards_diff < 0)[0]]]
             previous_rewards = rewards[selected_data_idx]
             previous_data_idx_mapping = copy.deepcopy(current_data_idx_mapping)
@@ -587,8 +542,6 @@ for epoch in range(init_epoch+1, num_epoch):
             time_data_step_end = time.time()
             print("Train Epoch {:02d}-{:03d} Batch {} | Time {:.4f}s | avg loss: {:.4f}".format(epoch, step, batch_idx, (time_data_step_end - time_data_step_start), np.sum(avg_losses)/np.sum(avg_losses_num)))
 
-            # print(previous_data_idx_mapping)
-            # print(step, "finished.", Batchdata.x.shape, finished_num, len(current_roots))
             if finished_num == len(roots):
                 break
         time_batch_end = time.time()
@@ -673,7 +626,6 @@ for epoch in range(init_epoch+1, num_epoch):
 
             gclass_prob = KPG.calculate_reward_feedback(new_x.to(device),new_edges.to(device),Batchdata.batch.to(device))
             gclass_prob = 1.5 - gclass_prob[range(rewards.shape[0]),Batchdata.y]
-            # gclass_prob = torch.clamp(gclass_prob, 1, 1+0.025*min(step+1,20))
 
             ### split batch data
             loss = torch.tensor([],dtype=torch.float32).to(device)
@@ -704,8 +656,6 @@ for epoch in range(init_epoch+1, num_epoch):
                 for edge_idx in range(edge_index_i.shape[1]):
                     org_s_node = s_mapping_i[1][edge_index_i[0][edge_idx]].item() - max_size_dic[datasetname.split('_')[0]]
                     org_e_node = s_mapping_i[1][edge_index_i[1][edge_idx]].item() - max_size_dic[datasetname.split('_')[0]]
-                    # if org_e_node not in start_nodes_lists[previous_data_idx_mapping[data_idx]]:   # deal with selected nodes in previous steps
-                    #     start_nodes_lists[previous_data_idx_mapping[data_idx]].append(org_e_node)
                     generated_edges.append([org_s_node, org_e_node])
                 start_nodes_lists[previous_data_idx_mapping[data_idx]].append(chosen_e_node.item() - max_size_dic[datasetname.split('_')[0]])
 
@@ -716,13 +666,11 @@ for epoch in range(init_epoch+1, num_epoch):
                         if patiences[data_idx, label] < max_patience:
                             continue_cond = True
                         else:
-                            # result_generated_graphs[previous_data_idx_mapping[data_idx]][label] = copy.deepcopy(Batchdata_list_previous_epoch[data_idx])
                             result_generated_graphs[previous_data_idx_mapping[data_idx]][label] = 1
                     else:
                         if patiences[data_idx, label] == 0:
                             continue_cond = True
                         if patiences[data_idx, label] == 1 and rewards_diff_all[data_idx, label]<0:
-                            # result_generated_graphs[previous_data_idx_mapping[data_idx]][label] = copy.deepcopy(Batchdata_list_previous_epoch[data_idx])
                             result_generated_graphs[previous_data_idx_mapping[data_idx]][label] = 1
                 if node_num_i < max_size_dic[datasetname.split('_')[0]]-1 and continue_cond:
                     current_data_idx_mapping[len(Batchdata_list)] = previous_data_idx_mapping[data_idx]
@@ -757,19 +705,7 @@ for epoch in range(init_epoch+1, num_epoch):
                     np.savez(_dir+f'rl_data/{datasetname}/fold_{fold}L/epoch_{epoch}/{root_id}.npz', x=data_i.x[:data_i.node_num.item()].cpu().numpy(), 
                             edge_index=data_i.edge_index.cpu().numpy(), node_num=data_i.node_num.cpu().numpy(), 
                             y=data_i.y.cpu().numpy(), isGenerated=isGenerated)
-                    # if patiences[data_idx, val_reward_dim[root_id]] < max_patience:
-                    #     np.savez(_dir+f'rl_data/{datasetname}/fold_{fold}R/epoch_{epoch}/{root_id}.npz', x=data_i.x[:data_i.node_num.item()].cpu().numpy(), 
-                    #         edge_index=data_i.edge_index.cpu().numpy(), node_num=data_i.node_num.cpu().numpy(), 
-                    #         y=data_i.y.cpu().numpy(), isGenerated=isGenerated)
-                    # else:
-                    #     isGenerated = np.zeros_like(result_generated_graphs[previous_data_idx_mapping[data_idx]][val_reward_dim[root_id]].s_mapping[0].cpu())
-                    #     for nidx, n in enumerate(result_generated_graphs[previous_data_idx_mapping[data_idx]][val_reward_dim[root_id]].s_mapping[0].tolist()):
-                    #         if 'tag' in augtree[result_generated_graphs[previous_data_idx_mapping[data_idx]][val_reward_dim[root_id]].s_mapping[1].tolist()[nidx]-max_size_dic[datasetname.split('_')[0]]+1].keys():
-                    #             isGenerated[n] = 1
-                    #     np.savez(_dir+f'rl_data/{datasetname}/fold_{fold}R/epoch_{epoch}/{root_id}.npz', x=result_generated_graphs[previous_data_idx_mapping[data_idx]][val_reward_dim[root_id]].x[:result_generated_graphs[previous_data_idx_mapping[data_idx]][val_reward_dim[root_id]].node_num.item()].cpu().numpy(), 
-                    #         edge_index=result_generated_graphs[previous_data_idx_mapping[data_idx]][val_reward_dim[root_id]].edge_index.cpu().numpy(), node_num=result_generated_graphs[previous_data_idx_mapping[data_idx]][val_reward_dim[root_id]].node_num.cpu().numpy(), 
-                    #         y=result_generated_graphs[previous_data_idx_mapping[data_idx]][val_reward_dim[root_id]].y.cpu().numpy(), isGenerated=isGenerated)
-                    
+
                     finished_num += 1
                     org_node_num = org_traindata_list[batch_idx*batchsize+previous_data_idx_mapping[data_idx]].x.shape[0]
                     print("Test {:04d}/{} finished | true_{}==pred_{}({}):{}, loss:{:.4f}, reward:{:.4f}, rloss:{:.4f}, output:{}, len(generated_edges):{}, node_num:{}({}), patience: {}({}), augmented: {}, idx: {}".format(
@@ -786,7 +722,6 @@ for epoch in range(init_epoch+1, num_epoch):
             avg_losses_num.append(len(current_roots))
 
             patiences = patiences[selected_data_idx]
-            # rewards[torch.where(rewards_diff < 0)[0]] = previous_rewards[torch.where(rewards_diff < 0)[0]]
             rewards[torch.where(rewards_diff < 0)[0],Batchdata_y[torch.where(rewards_diff < 0)[0]]]=previous_rewards[torch.where(rewards_diff < 0)[0],Batchdata_y[torch.where(rewards_diff < 0)[0]]]
             Batchdata_y = Batchdata_y[selected_data_idx]
             previous_rewards = rewards[selected_data_idx]
@@ -821,27 +756,6 @@ for epoch in range(init_epoch+1, num_epoch):
     if accs >= best_acc_LL:
         best_acc_LL = accs
         print('In epoch {}, best_acc_LL of {}_fold{} is updated to {}.'.format(epoch,datasetname,fold,best_acc_LL))
-    # elif KPG_patience > 0:
-    #     break
-    # else:
-    #     KPG_patience += 1
-    
-    # accs, F1, F2, F3, F4 = GCN_main4class(datasetname, device, fold, x_train_ids, x_test_ids, fold+f"R/epoch_{epoch}", fold+f"R/epoch_{epoch}", 5, modelname = 'KPGCN', TDdroprate=droprate, BUdroprate=droprate)
-    # print("{}-fold{} [Epoch {:2d} cascade|test|RR {}] acc:{:.4f} | F1:{:.4f} | F2:{:.4f} | F3:{:.4f} | F4:{:.4f}\n{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}".format(datasetname, fold, epoch, droprate, accs, F1, F2, F3, F4, accs, F1, F2, F3, F4))
-    # if accs >= best_acc_RR:
-    #     best_acc_RR = accs
-    #     print('In epoch {}, best_acc_RR of {}_fold{} is updated to {}.'.format(epoch,datasetname,fold,best_acc_RR))
-        
-    # accs, F1, F2, F3, F4 = GCN_main4class(datasetname, device, fold, x_train_ids, x_test_ids, fold+f"L/epoch_{epoch}", fold+f"R/epoch_{epoch}", 5, modelname = 'KPGCN', TDdroprate=droprate, BUdroprate=droprate)
-    # print("{}-fold{} [Epoch {:2d} cascade|test|LR {}] acc:{:.4f} | F1:{:.4f} | F2:{:.4f} | F3:{:.4f} | F4:{:.4f}\n{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}".format(datasetname, fold, epoch, droprate, accs, F1, F2, F3, F4, accs, F1, F2, F3, F4))
-    # if accs >= best_acc_LR:
-    #     best_acc_LR = accs
-    #     print('In epoch {}, best_acc_LR of {}_fold{} is updated to {}.'.format(epoch,datasetname,fold,best_acc_LR))  
-    
-    # accs, F1, F2, F3, F4 = GCN_main4class(datasetname, device, fold, x_train_ids, x_test_ids, fold+f"R/epoch_{epoch}", fold+f"L/epoch_{epoch}", 5, modelname = 'KPGCN', TDdroprate=droprate, BUdroprate=droprate)
-    # print("{}-fold{} [Epoch {:2d} cascade|test|RL {}] acc:{:.4f} | F1:{:.4f} | F2:{:.4f} | F3:{:.4f} | F4:{:.4f}\n{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}".format(datasetname, fold, epoch, droprate, accs, F1, F2, F3, F4, accs, F1, F2, F3, F4))
-    # if accs >= best_acc_RL:
-    #     best_acc_RL = accs
-    #     print('In epoch {}, best_acc_RL of {}_fold{} is updated to {}.'.format(epoch,datasetname,fold,best_acc_RL))
+
 print("<----------------- BEST_ACC:", max([best_acc_LL, best_acc_RR, best_acc_LR, best_acc_RL]), "----------------->")
 print("<-----------------", "end time:", time.asctime(), datasetname, "fold", fold, device, "----------------->")
