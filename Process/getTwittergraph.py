@@ -73,7 +73,11 @@ def getfeature(x_word,x_index):
     for i in range(len(x_index)):
         if len(x_index[i])>0:
             x[i, np.array(x_index[i])] = np.array(x_word[i])
-    return x
+    # turn x into sparse matrix
+    from scipy.sparse import csr_matrix, coo_matrix
+    # import pdb
+    x_coo = coo_matrix(x)
+    return np.vstack([x_coo.row.astype(int), x_coo.col.astype(int), x_coo.data.astype(int)])
 
 def main(obj):
     treePath = os.path.join(cwd, 'data/' + obj + '/data.TD_RvNN.vol_5000.txt')
@@ -128,14 +132,14 @@ def main(obj):
                 x_x = getfeature([x_word], [x_index])
                 tree = [[0],[0]]
                 rootfeat, tree, x_x, rootindex, y = np.array(rootfeat), np.array(tree), np.array(x_x).astype(int), np.array(0), np.array(y)
-                np.savez( os.path.join(cwd, 'data/'+obj+'graph/'+id+'.npz'), x=x_x,root=rootfeat,edgeindex=tree,rootindex=rootindex,y=y)
+                np.savez( os.path.join(cwd, 'data/'+obj+'graph/'+id+'.npz'), x=x_x,root=rootfeat,edgeindex=tree,rootindex=rootindex,y=y, bert_x=np.empty((len(x_index), 768)))
                 return None
         if len(event)>1:
             x_word, x_index, tree, rootfeat, rootindex = constructMat(event)
             x_x = getfeature(x_word, x_index)
             rootfeat, tree, x_x, rootindex, y = np.array(rootfeat), np.array(tree), np.array(x_x), np.array(
                 rootindex), np.array(y)
-            np.savez( os.path.join(cwd, 'data/'+obj+'graph/'+id+'.npz'), x=x_x,root=rootfeat,edgeindex=tree,rootindex=rootindex,y=y)
+            np.savez( os.path.join(cwd, 'data/'+obj+'graph/'+id+'.npz'), x=x_x,root=rootfeat,edgeindex=tree,rootindex=rootindex,y=y, bert_x=np.empty((len(x_index), 768)))
             return None
     print("loading dataset", )
     # Parallel(n_jobs=30, backend='threading')(delayed(loadEid)(treeDic[eid] if eid in treeDic else None,eid,labelDic[eid]) for eid in tqdm(event))
